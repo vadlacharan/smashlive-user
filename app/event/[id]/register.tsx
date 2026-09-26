@@ -331,7 +331,7 @@ export default function EventRegisterScreen() {
         <View style={styles.trustBadge}>
           <ShieldCheck size={18} color={Colors.green} />
           <Text style={styles.trustText}>
-            Instant Draw Placement • Razorpay Secured
+            Instant Draw Placement • 100% Secure Checkout
           </Text>
         </View>
       </ScrollView>

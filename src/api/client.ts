@@ -170,6 +170,20 @@ export const api = {
     return true;
   },
 
+  async forgotPassword(email: string): Promise<void> {
+    await request('/api/users/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  async resetPassword(token: string, password: string): Promise<void> {
+    await request('/api/users/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  },
+
   async logout(): Promise<void> {
     try {
       await request('/api/users/logout', { method: 'POST' });

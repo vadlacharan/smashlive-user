@@ -25,6 +25,7 @@ import {
 } from '../../../src/hooks/useArenas';
 import { BorderRadius, Colors, Fonts, Spacing, Typography } from '../../../src/theme';
 import { formatDateShort, formatTimeRange } from '../../../src/utils/calendar';
+import { formatCurrency } from '../../../src/utils/text';
 import {
   RazorpayCheckoutOptions,
   RazorpaySuccessResponse,
@@ -274,7 +275,7 @@ const handlePay = async () => {
 
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total Payable</Text>
-            <Text style={styles.totalValue}>₹{total}</Text>
+            <Text style={styles.totalValue}>{formatCurrency(total, arena?.currency)}</Text>
           </View>
         </View>
 
@@ -282,7 +283,7 @@ const handlePay = async () => {
         <View style={styles.trustBadge}>
           <ShieldCheck size={18} color={Colors.green} />
           <Text style={styles.trustText}>
-            100% Secure Checkout via Razorpay • 15-Minute Slot Hold Active
+            100% Secure Checkout • 15-Minute Slot Hold Active
           </Text>
         </View>
       </ScrollView>
