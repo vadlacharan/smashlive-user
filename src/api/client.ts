@@ -367,6 +367,19 @@ export const api = {
     return await request<Match>(`/api/matches/${id}?depth=2`);
   },
 
+  async getMyMatches(userId: number): Promise<Match[]> {
+    const query = [
+      `where[or][0][player1][equals]=${userId}`,
+      `where[or][1][player2][equals]=${userId}`,
+      `where[or][2][player1Partner][equals]=${userId}`,
+      `where[or][3][player2Partner][equals]=${userId}`,
+    ].join('&');
+    const data = await request<{ docs: Match[] }>(
+      `/api/matches?${query}&sort=-matchDate&depth=2&limit=100`
+    );
+    return data.docs || [];
+  },
+
   async getSets(matchId: number): Promise<SetModel[]> {
     const data = await request<{ docs: SetModel[] }>(
       `/api/sets?where[match][equals]=${matchId}&sort=set&depth=0`
@@ -414,7 +427,7 @@ export const api = {
           status: b.isPaid ? 'PAID' : 'PENDING',
           date: b.slotStart || new Date().toISOString(),
           paymentGateway: b.paymentGateway || 'razorpay',
-          referenceId: b.razorpayPaymentId || `BK-${b.id}`,
+          referenceId: b.razorpayPaymentId || b.paymentIntentId || `BK-${b.id}`,
           sportType: b.sportType || 'badminton',
           arenaId,
         });
@@ -437,11 +450,11 @@ export const api = {
           title: eventTitle,
           subtitle: typeof r.partner === 'object' && r.partner ? `With ${r.partner.fullname}` : 'Singles Entry',
           amount: r.amount || 0,
-          currency: 'INR',
+          currency: r.currency || 'INR',
           status: r.isPaid ? 'PAID' : 'PENDING',
           date: r.createdAt || new Date().toISOString(),
-          paymentGateway: 'razorpay',
-          referenceId: r.razorpayPaymentId || `REG-${r.id}`,
+          paymentGateway: r.paymentGateway || 'razorpay',
+          referenceId: r.razorpayPaymentId || r.paymentIntentId || `REG-${r.id}`,
           tournamentId: eventTournamentId,
         });
       });

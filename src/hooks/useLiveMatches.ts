@@ -41,3 +41,12 @@ export function useMatchSets(matchId: number) {
     enabled: !!matchId,
   });
 }
+
+export function useMyMatches(userId?: number) {
+  return useQuery({
+    queryKey: ['matches', 'mine', userId],
+    queryFn: () => api.getMyMatches(userId!),
+    staleTime: 30_000,
+    enabled: !!userId,
+  });
+}
