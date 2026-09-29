@@ -19,7 +19,7 @@ import { Input } from '../../../src/components/common/Input';
 import { PaymentLoader } from '../../../src/components/common/PaymentLoader';
 import { ScreenWash } from '../../../src/components/common/ScreenWash';
 import { RazorpayModal } from '../../../src/components/payment/RazorpayModal';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../src/context/AuthContext';
 import {
   useCreateRegistrationOrder,
@@ -41,7 +41,7 @@ export default function EventRegisterScreen() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const openStripeCheckout = useStripeCheckout();
-  const { id, eventTitle, eventType, cost: costRaw, currency: currencyRaw, tournamentTitle, tournamentId, normalCost: normalCostRaw, eventDescription } =
+  const { id, eventTitle, eventType, cost: costRaw, currency: currencyRaw, tournamentTitle, tournamentId, eventDescription } =
     useLocalSearchParams<{
       id: string;
       eventTitle: string;
@@ -56,8 +56,6 @@ export default function EventRegisterScreen() {
 
   const eventId = Number(id) || 101;
   const cost = Number(costRaw) || 600;
-  const normalCost = Number(normalCostRaw) || cost;
-  const isDiscounted = normalCost > cost;
   const currency = currencyRaw === 'USD' ? ('USD' as const) : ('INR' as const);
   const isDoubles = eventType === 'doubles';
 
@@ -70,6 +68,20 @@ export default function EventRegisterScreen() {
   const [rzpModalVisible, setRzpModalVisible] = useState(false);
   const [rzpOptions, setRzpOptions] = useState<RazorpayCheckoutOptions | null>(null);
   const [activeRegId, setActiveRegId] = useState<number | null>(null);
+
+  const { data: quote } = useQuery({
+    queryKey: ['reg-quote', eventId, selectedPartner?.id ?? null],
+    queryFn: () => api.getRegistrationQuote(eventId, selectedPartner?.id ?? null),
+    enabled: cost > 0,
+    staleTime: 15_000,
+  });
+
+  const memberPrice = (q: typeof quote, who: 'you' | 'partner'): number => {
+    if (!q) return cost / (isDoubles ? 2 : 1);
+    const isDiscountedMember = who === 'you' ? q.primaryPrior : q.partnerPrior;
+    if (isDiscountedMember && q.discountPerMember != null) return q.discountPerMember;
+    return q.perMember;
+  };
 
   const createOrderMutation = useCreateRegistrationOrder();
   const verifyPaymentMutation = useVerifyRegistrationPayment();
@@ -234,25 +246,58 @@ export default function EventRegisterScreen() {
             <Text style={styles.infoValue}>{user?.fullname || 'Your full name'}</Text>
           </View>
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Entry Fee (per team)</Text>
-            {isDiscounted ? (
+          {/* Per-player price breakdown (multi-event discount) */}
+          <View style={styles.feeSection}>
+            <Text style={styles.feeSectionLabel}>ENTRY FEE BREAKDOWN</Text>
+
+            <View style={styles.feeBreakdownRow}>
+              <Text style={styles.feeBreakdownLabel}>
+                You{quote?.primaryPrior ? ' · 2nd+ event' : ''}
+              </Text>
               <View style={styles.feeRow}>
-                <Text style={styles.feeStrike}>{formatCurrency(normalCost, currency)}</Text>
-                <Text style={styles.feeValue}>{formatCurrency(cost, currency)}</Text>
+                {quote?.primaryPrior && quote.discountPerMember != null && (
+                  <Text style={styles.feeStrike}>
+                    {formatCurrency(quote.perMember, quote.currency)}
+                  </Text>
+                )}
+                <Text style={styles.feeValue}>
+                  {formatCurrency(memberPrice(quote, 'you'), quote?.currency || currency)}
+                </Text>
               </View>
-            ) : (
-              <Text style={styles.feeValue}>{formatCurrency(cost, currency)}</Text>
+            </View>
+
+            {isDoubles && (
+              <View style={styles.feeBreakdownRow}>
+                <Text style={styles.feeBreakdownLabel}>
+                  {selectedPartner?.fullname || 'Partner'}
+                  {quote?.partnerPrior ? ' · 2nd+ event' : ''}
+                </Text>
+                {selectedPartner ? (
+                  <View style={styles.feeRow}>
+                    {quote?.partnerPrior && quote.discountPerMember != null && (
+                      <Text style={styles.feeStrike}>
+                        {formatCurrency(quote.perMember, quote.currency)}
+                      </Text>
+                    )}
+                    <Text style={styles.feeValue}>
+                      {formatCurrency(memberPrice(quote, 'partner'), quote?.currency || currency)}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.feePending}>Select partner</Text>
+                )}
+              </View>
+            )}
+
+            {(quote?.primaryPrior || quote?.partnerPrior) && (
+              <View style={styles.discountNote}>
+                <Text style={styles.discountNoteText}>
+                  Multi-event discount applied to players who already registered in this
+                  tournament.
+                </Text>
+              </View>
             )}
           </View>
-
-          {isDiscounted && (
-            <View style={styles.discountNote}>
-              <Text style={styles.discountNoteText}>
-                Multi-event discount applied — this is your 2nd+ registration in this tournament.
-              </Text>
-            </View>
-          )}
         </View>
 
         {/* Doubles Partner Picker */}
@@ -316,15 +361,34 @@ export default function EventRegisterScreen() {
           <Text style={styles.cardHeader}>PAYMENT SUMMARY</Text>
 
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Team Registration Fee</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(cost, currency)}</Text>
+            <Text style={styles.summaryLabel}>
+              {isDoubles ? 'Your share' : 'Registration Fee'}
+            </Text>
+            <Text style={styles.summaryValue}>
+              {formatCurrency(memberPrice(quote, 'you'), quote?.currency || currency)}
+            </Text>
           </View>
+
+          {isDoubles && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>
+                {selectedPartner ? `${selectedPartner.fullname}'s share` : 'Partner share'}
+              </Text>
+              <Text style={styles.summaryValue}>
+                {selectedPartner
+                  ? formatCurrency(memberPrice(quote, 'partner'), quote?.currency || currency)
+                  : '—'}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.divider} />
 
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total Payable</Text>
-            <Text style={styles.totalValue}>{formatCurrency(cost, currency)}</Text>
+            <Text style={styles.totalValue}>
+              {formatCurrency(quote?.amount ?? cost, quote?.currency || currency)}
+            </Text>
           </View>
         </View>
 
@@ -339,7 +403,7 @@ export default function EventRegisterScreen() {
       {/* Sticky Bottom Action */}
       <View style={styles.bottomBar}>
         <Button
-          title={isProcessing ? 'Processing Entry...' : `Register & Pay ${formatCurrency(cost, currency)}`}
+          title={isProcessing ? 'Processing Entry...' : `Register & Pay ${formatCurrency(quote?.amount ?? cost, quote?.currency || currency)}`}
           onPress={handlePayAndRegister}
           loading={isProcessing}
           fullWidth
@@ -446,6 +510,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  feeSection: {
+    marginTop: Spacing.xs,
+    gap: 8,
+  },
+  feeSectionLabel: {
+    color: Colors.textTertiary,
+    fontSize: Typography.micro,
+    fontFamily: Fonts.bodyBold,
+    letterSpacing: 1.1,
+    marginBottom: 2,
+  },
+  feeBreakdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  feeBreakdownLabel: {
+    color: Colors.textSecondary,
+    fontSize: Typography.footnote,
+    flex: 1,
+    fontFamily: Fonts.bodySemibold,
+  },
+  feePending: {
+    color: Colors.textTertiary,
+    fontSize: Typography.footnote,
+    fontStyle: 'italic',
   },
   feeStrike: {
     color: Colors.textTertiary,

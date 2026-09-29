@@ -306,6 +306,26 @@ export const api = {
     });
   },
 
+  async getRegistrationQuote(
+    eventId: number,
+    partnerId?: number | null
+  ): Promise<{
+    amount: number;
+    currency: string;
+    isDoubles: boolean;
+    baseCost: number;
+    perMember: number;
+    discountPerMember: number | null;
+    memberCount: number;
+    primaryPrior: boolean;
+    partnerPrior: boolean;
+  }> {
+    return await request<any>('/api/registrations/quote', {
+      method: 'POST',
+      body: JSON.stringify({ eventId, partnerId }),
+    });
+  },
+
   async verifyRegistrationPayment(payload: {
     registrationId: number;
     razorpay_order_id?: string;

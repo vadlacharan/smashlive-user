@@ -227,8 +227,8 @@ export default function TournamentDetailScreen() {
                 {formatCurrency(
                   tournament.additionalEventDiscountPrice,
                   (events[0] as Event | undefined)?.currency
-                )}
-                .
+                )}{' '}
+                per player.
               </Text>
             </View>
           )}
@@ -248,7 +248,11 @@ export default function TournamentDetailScreen() {
                 typeof tournament.additionalEventDiscountPrice === 'number'
                   ? tournament.additionalEventDiscountPrice
                   : null;
+              // Doubles pricing is per-player (depends on the chosen partner),
+              // so the exact discount is shown on the register page. Singles
+              // show the discounted price directly on the card.
               const showDiscount =
+                event.eventType !== 'doubles' &&
                 !!discountPrice &&
                 hasPriorRegistration &&
                 !isRegistered &&

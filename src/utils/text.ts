@@ -8,6 +8,6 @@ export function toTitleCase(input?: string | null): string {
     .join(' ');
 }
 
-export function formatCurrency(amount: number, currency?: 'INR' | 'USD'): string {
-  return currency === 'USD' ? `$${amount}` : `₹${amount}`;
+export function formatCurrency(amount: number, currency?: string): string {
+  return (currency || '').toUpperCase() === 'USD' ? `$${amount}` : `₹${amount}`;
 }
