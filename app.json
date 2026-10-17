@@ -15,8 +15,12 @@
     },
     "ios": {
       "supportsTablet": true,
+      "requireFullScreen": true,
       "bundleIdentifier": "com.smashlive.user",
-      "icon": "./assets/icon.png"
+      "icon": "./assets/icon.png",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.smashlive.user",
@@ -54,6 +58,12 @@
       "eas": {
         "projectId": "d54a4762-e0a8-4f18-8c71-148c371aa9b2"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d54a4762-e0a8-4f18-8c71-148c371aa9b2"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     },
     "owner": "charanvadla27"
   }

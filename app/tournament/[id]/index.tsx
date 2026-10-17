@@ -25,8 +25,10 @@ import { LiveBadge, SportBadge } from '../../../src/components/common/Badge';
 import { Button } from '../../../src/components/common/Button';
 import { Header } from '../../../src/components/common/Header';
 import { ScreenWash } from '../../../src/components/common/ScreenWash';
+import { useAuth } from '../../../src/context/AuthContext';
 import { useLocation } from '../../../src/context/LocationContext';
 import { useEvents, useTournament, useMyRegistrations } from '../../../src/hooks/useTournaments';
+import { promptSignIn } from '../../../src/utils/requireAuth';
 import { API_BASE_URL } from '../../../src/api/client';
 import { BorderRadius, Colors, Fonts, Spacing, Typography } from '../../../src/theme';
 import { Event } from '../../../src/types';
@@ -36,6 +38,7 @@ import { resolveMediaUrl } from '../../../src/utils/media';
 
 export default function TournamentDetailScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const tournamentId = Number(id) || 1;
 
@@ -340,7 +343,8 @@ export default function TournamentDetailScreen() {
                     ) : isRegistrationOpen ? (
                       <Button
                         title="Register"
-                        onPress={() =>
+                        onPress={() => {
+                          if (!promptSignIn(router, 'register for an event', !!user)) return;
                           router.push({
                             pathname: `/event/${event.id}/register`,
                             params: {
@@ -351,11 +355,11 @@ export default function TournamentDetailScreen() {
                               currency: event.currency,
                               tournamentTitle: tournament.title,
                               tournamentId: String(tournamentId),
-                              eventDescription: event.description || '',
-                              pairingType: event['Pairing Type'] || '',
-                            },
-                          })
-                        }
+                            eventDescription: event.description || '',
+                            pairingType: event['Pairing Type'] || '',
+                            }
+                          });
+                        }}
                         size="sm"
                         style={styles.eventButton}
                       />

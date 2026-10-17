@@ -11,7 +11,9 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Check, CreditCard, Search, ShieldCheck, UserCheck, Users, Zap } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../../../src/api/client';
+import { AuthGate } from '../../../src/components/common/AuthGate';
 import { Button } from '../../../src/components/common/Button';
 import { ConfettiOverlay } from '../../../src/components/common/ConfettiOverlay';
 import { Header } from '../../../src/components/common/Header';
@@ -38,6 +40,7 @@ import { useStripeCheckout } from '../../../src/hooks/useStripeCheckout';
 
 export default function EventRegisterScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const openStripeCheckout = useStripeCheckout();
@@ -73,7 +76,7 @@ export default function EventRegisterScreen() {
   const { data: quote } = useQuery({
     queryKey: ['reg-quote', eventId, selectedPartner?.id ?? null],
     queryFn: () => api.getRegistrationQuote(eventId, selectedPartner?.id ?? null),
-    enabled: cost > 0,
+    enabled: cost > 0 && !!user,
     staleTime: 15_000,
   });
 
@@ -227,7 +230,18 @@ export default function EventRegisterScreen() {
         showBack
       />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      {!user ? (
+        <AuthGate
+          title="Sign in to register"
+          description="Tournament entries are linked to your player profile. Sign in or create an account to register for this event."
+          actionLabel="register for this event"
+        />
+      ) : (
+      <>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Event Details Card */}
         <View style={styles.eventCard}>
           <Text style={styles.cardHeader}>EVENT DETAILS</Text>
@@ -403,7 +417,7 @@ export default function EventRegisterScreen() {
       </ScrollView>
 
       {/* Sticky Bottom Action */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.md) }]}>
         <Button
           title={isProcessing ? 'Processing Entry...' : `Register & Pay ${formatCurrency(quote?.amount ?? cost, quote?.currency || currency)}`}
           onPress={handlePayAndRegister}
@@ -413,6 +427,8 @@ export default function EventRegisterScreen() {
           variant="primary"
         />
       </View>
+      </>
+      )}
 
       {/* Success Modal */}
       {registeredSuccess && (

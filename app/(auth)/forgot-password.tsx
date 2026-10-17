@@ -49,7 +49,10 @@ export default function ForgotPasswordScreen() {
     >
       <ScreenWash />
       <Header transparent />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.brandContainer}>
           <View style={styles.brandIconWrapper}>
             <KeyRound size={28} color={Colors.green} />

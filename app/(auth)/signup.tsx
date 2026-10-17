@@ -62,7 +62,10 @@ export default function SignupScreen() {
     >
       <ScreenWash />
       <Header transparent />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.brandContainer}>
           <Text style={styles.title}>Join SmashLive</Text>
           <Text style={styles.subtitle}>

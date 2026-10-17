@@ -17,6 +17,7 @@ import {
   CreditCard,
   Edit3,
   FileText,
+  LogIn,
   LogOut,
   MapPin,
   ShieldCheck,
@@ -293,20 +294,37 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity
-            onPress={handleLogout}
-            style={[styles.actionRow, styles.logoutRow]}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.actionIconWrapper, styles.logoutIconWrapper]}>
-              <LogOut size={20} color={Colors.danger} />
-            </View>
-            <View style={styles.actionTextCol}>
-              <Text style={[styles.actionTitle, styles.logoutText]}>Sign Out</Text>
-              <Text style={styles.actionDesc}>Log out of your session on this device</Text>
-            </View>
-            <ChevronRight size={18} color={Colors.textTertiary} />
-          </TouchableOpacity>
+          {user ? (
+            <TouchableOpacity
+              onPress={handleLogout}
+              style={[styles.actionRow, styles.logoutRow]}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIconWrapper, styles.logoutIconWrapper]}>
+                <LogOut size={20} color={Colors.danger} />
+              </View>
+              <View style={styles.actionTextCol}>
+                <Text style={[styles.actionTitle, styles.logoutText]}>Sign Out</Text>
+                <Text style={styles.actionDesc}>Log out of your session on this device</Text>
+              </View>
+              <ChevronRight size={18} color={Colors.textTertiary} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/login')}
+              style={[styles.actionRow, styles.signInRow]}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIconWrapper, styles.signInIconWrapper]}>
+                <LogIn size={20} color={Colors.green} />
+              </View>
+              <View style={styles.actionTextCol}>
+                <Text style={[styles.actionTitle, styles.signInText]}>Sign In / Create Account</Text>
+                <Text style={styles.actionDesc}>Book courts, register for tournaments & sync stats</Text>
+              </View>
+              <ChevronRight size={18} color={Colors.textTertiary} />
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -474,10 +492,19 @@ const styles = StyleSheet.create({
   logoutRow: {
     borderColor: 'rgba(239, 68, 68, 0.25)',
   },
+  signInRow: {
+    borderColor: 'rgba(57, 255, 136, 0.35)',
+  },
   logoutIconWrapper: {
     backgroundColor: Colors.dangerMuted,
   },
   logoutText: {
     color: Colors.danger,
+  },
+  signInIconWrapper: {
+    backgroundColor: 'rgba(57, 255, 136, 0.12)',
+  },
+  signInText: {
+    color: Colors.green,
   },
 });

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { api, getAuthToken, getCachedUser } from '../api/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { ApiError, api, getAuthToken, getCachedUser, setAuthToken, setCachedUser, setUnauthorizedHandler } from '../api/client';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -23,6 +24,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  // Per-user cached data (bookings, registrations, …) must never leak
+  // across accounts or linger for guests — refresh it on every auth change.
+  const invalidateUserCaches = () => {
+    queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    queryClient.invalidateQueries({ queryKey: ['registrations'] });
+    queryClient.invalidateQueries({ queryKey: ['my-registrations'] });
+    queryClient.invalidateQueries({ queryKey: ['transactions'] });
+  };
+
+  useEffect(() => {
+    // If the stored token is rejected mid-session (revoked on another
+    // device, expired server-side), drop the UI session immediately.
+    setUnauthorizedHandler(() => {
+      setUser(null);
+      invalidateUserCaches();
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [queryClient]);
 
   useEffect(() => {
     async function restoreSession() {
@@ -34,11 +55,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (cached) {
             setUser(cached);
           }
-          // Refresh from the server. If this fails (offline / transient
-          // network error), the cached session is kept — never force-logout.
-          const currentUser = await api.getMe();
-          if (currentUser) {
-            setUser(currentUser);
+          try {
+            // Refresh from the server. getMe rethrows 401 (dead token) but
+            // returns null for offline/transient failures.
+            const currentUser = await api.getMe();
+            if (currentUser) {
+              setUser(currentUser);
+            }
+          } catch (err) {
+            if (err instanceof ApiError && err.statusCode === 401) {
+              // Token is revoked/expired server-side — this is a real logout,
+              // not an offline blip. Clear everything so a stale session can
+              // never masquerade as logged in.
+              await setAuthToken(null);
+              await setCachedUser(null);
+              setUser(null);
+            }
+            // Otherwise (offline / transient): keep the cached session.
           }
         } else {
           setUser(null);
@@ -57,6 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const data = await api.login(email, pass);
       setUser(data.user);
+      invalidateUserCaches();
     } finally {
       setIsLoading(false);
     }
@@ -75,6 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // No email verification — log the new player straight in.
       if (result?.user) {
         setUser(result.user);
+        invalidateUserCaches();
       }
       return result;
     } finally {
@@ -87,6 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await api.logout();
       setUser(null);
+      invalidateUserCaches();
     } finally {
       setIsLoading(false);
     }

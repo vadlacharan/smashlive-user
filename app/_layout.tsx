@@ -22,6 +22,7 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import { AuthProvider } from '../src/context/AuthContext';
 import { LocationProvider } from '../src/context/LocationContext';
 import { LiveSync } from '../src/components/common/LiveSync';
+import { AppUpdateGate } from '../src/components/common/AppUpdateGate';
 import { Colors } from '../src/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -48,7 +49,7 @@ const queryClient = new QueryClient({
 });
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
@@ -59,10 +60,16 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
+    // Never trap the app on the splash screen: proceed once fonts load,
+    // and also proceed (with system-font fallback) if fonts fail, so a
+    // font CDN failure can never present as a frozen launch screen.
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded]);
+    if (fontError) {
+      console.warn('Font loading failed, using fallback fonts:', fontError);
+    }
+  }, [fontsLoaded, fontError]);
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.canvas }}>
@@ -74,6 +81,7 @@ export default function RootLayout() {
             urlScheme="smashlive"
           >
             <LiveSync />
+            <AppUpdateGate />
             <AuthProvider>
             <LocationProvider>
               <ThemeProvider value={navDarkTheme}>

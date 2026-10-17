@@ -64,7 +64,10 @@ export default function LoginScreen() {
     >
       <ScreenWash />
       <Header transparent />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Brand Icon & Heading */}
         <View style={styles.brandContainer}>
           <View style={styles.brandIconWrapper}>

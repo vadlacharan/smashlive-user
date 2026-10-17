@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Trophy } from 'lucide-react-native';
+import { AuthGate } from '../../src/components/common/AuthGate';
 import { EmptyState } from '../../src/components/common/EmptyState';
 import { Header } from '../../src/components/common/Header';
 import { ScreenWash } from '../../src/components/common/ScreenWash';
@@ -85,6 +86,19 @@ export default function MyMatchesScreen() {
     refetch: refetchMatches,
     isRefetching: refetchingMatches,
   } = useMyMatches(user?.id);
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Header title="My Matches & Entries" showBack />
+        <AuthGate
+          title="Sign in to view your matches"
+          description="Your tournament entries, fixtures, and match history live here. Guests can still follow live scores on the Live tab."
+          actionLabel="your matches"
+        />
+      </View>
+    );
+  }
 
   const renderMatch = (match: Match) => {
     const p1 = nameOf(match.player1);

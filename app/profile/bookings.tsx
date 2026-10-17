@@ -9,19 +9,35 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BookingCard } from '../../src/components/booking/BookingCard';
+import { AuthGate } from '../../src/components/common/AuthGate';
 import { EmptyState } from '../../src/components/common/EmptyState';
 import { Header } from '../../src/components/common/Header';
+import { useAuth } from '../../src/context/AuthContext';
 import { splitBookings, useMyBookings } from '../../src/hooks/useBookings';
 import { BorderRadius, Colors, Fonts, Spacing, Typography } from '../../src/theme';
 
 export default function MyBookingsScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
 
   const { data: bookings = [], refetch, isRefetching } = useMyBookings();
   const { upcoming, past } = splitBookings(bookings);
 
   const displayedBookings = activeTab === 'upcoming' ? upcoming : past;
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Header title="My Court Bookings" showBack />
+        <AuthGate
+          title="Sign in to view your bookings"
+          description="Your upcoming and past court bookings will appear here once you sign in. Guests can still browse arenas and tournaments."
+          actionLabel="your bookings"
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

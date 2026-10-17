@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import {
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Calendar, Camera, Mail, Phone, User } from 'lucide-react-native';
+import { AuthGate } from '../../src/components/common/AuthGate';
 import { Button } from '../../src/components/common/Button';
 import { Header } from '../../src/components/common/Header';
 import { Input } from '../../src/components/common/Input';
@@ -28,6 +31,20 @@ export default function EditProfileScreen() {
   );
   const [avatarUrl, setAvatarUrl] = useState(user?.profilePicture?.url || '');
   const [loading, setLoading] = useState(false);
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <ScreenWash />
+        <Header title="Edit Profile" showBack />
+        <AuthGate
+          title="Sign in to edit your profile"
+          description="Your player profile — name, phone number, and photo — lives here once you sign in."
+          actionLabel="your profile"
+        />
+      </View>
+    );
+  }
 
   const handleSave = async () => {
     if (!fullname.trim()) {
@@ -55,11 +72,17 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
       <ScreenWash />
       <Header title="Edit Profile" showBack />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Avatar Photo Picker */}
         <View style={styles.avatarSection}>
           <View style={styles.avatarWrapper}>
@@ -136,7 +159,7 @@ export default function EditProfileScreen() {
           />
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

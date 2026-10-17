@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CreditCard, ShieldCheck, Zap } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BookingSuccessModal } from '../../../src/components/booking/BookingSuccessModal';
+import { AuthGate } from '../../../src/components/common/AuthGate';
 import { Button } from '../../../src/components/common/Button';
 import { Header } from '../../../src/components/common/Header';
 import { HoldTimerBanner, HoldTimerRing } from '../../../src/components/common/HoldTimerRing';
@@ -35,6 +37,7 @@ import { useStripeCheckout } from '../../../src/hooks/useStripeCheckout';
 
 export default function BookingCheckoutScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const openStripeCheckout = useStripeCheckout();
   const { id, court, date, slotStarts: slotStartsRaw, pricePerHour: pphRaw } =
@@ -47,7 +50,19 @@ export default function BookingCheckoutScreen() {
     }>();
 
   const arenaId = Number(id) || 1;
-  const slotStarts: string[] = slotStartsRaw ? JSON.parse(slotStartsRaw) : [];
+  // slotStarts arrives as a JSON-encoded string via router params. Parse it
+  // defensively — a malformed/deep-linked value must never crash checkout.
+  let slotStarts: string[] = [];
+  try {
+    if (Array.isArray(slotStartsRaw)) {
+      slotStarts = slotStartsRaw;
+    } else if (slotStartsRaw) {
+      const parsed: unknown = JSON.parse(slotStartsRaw);
+      if (Array.isArray(parsed)) slotStarts = parsed.filter((s) => typeof s === 'string');
+    }
+  } catch {
+    slotStarts = [];
+  }
   const pricePerHour = Number(pphRaw) || 400;
   const slotCount = slotStarts.length;
   const subtotal = slotCount * pricePerHour;
@@ -70,6 +85,8 @@ export default function BookingCheckoutScreen() {
   // Automatically create pending hold order on entry per API specification §10
   useEffect(() => {
     async function initOrder() {
+      // Guests see the sign-in gate below — never create orders for them.
+      if (!user) return;
       try {
         const order = await createOrderMutation.mutateAsync({
           arenaId,
@@ -90,7 +107,7 @@ export default function BookingCheckoutScreen() {
     if (slotStarts.length > 0) {
       initOrder();
     }
-  }, []);
+  }, [user]);
 
   const handleHoldExpire = () => {
     Alert.alert(
@@ -216,6 +233,20 @@ const handlePay = async () => {
   const dateFormatted = formatDateShort(date || firstSlot);
   const timeRangeFormatted = formatTimeRange(firstSlot, slotCount);
 
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <ScreenWash />
+        <Header title="Confirm Booking" showBack />
+        <AuthGate
+          title="Sign in to book a court"
+          description="Your selected slots are saved for this session. Sign in or create an account to confirm the booking and pay securely."
+          actionLabel="book a court"
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <ScreenWash />
@@ -289,7 +320,7 @@ const handlePay = async () => {
       </ScrollView>
 
       {/* Sticky Bottom Pay Button */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.md) }]}>
         <Button
           title={
             isProcessing

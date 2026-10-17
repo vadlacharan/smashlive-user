@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 
 export function useTournaments(cityId?: number) {
   return useQuery({
@@ -68,9 +69,12 @@ export function useFreeRegister() {
 }
 
 export function useMyRegistrations() {
+  const { isAuthenticated, isLoading } = useAuth();
   return useQuery({
     queryKey: ['my-registrations'],
     queryFn: () => api.getMyRegistrations(),
+    // Account endpoint — don't fire for guests or before session restore.
+    enabled: isAuthenticated && !isLoading,
     staleTime: 1000 * 60 * 2,
   });
 }

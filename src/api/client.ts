@@ -20,14 +20,61 @@ const CACHED_USER_KEY = 'smashlive_cached_user';
 // Persist the session for 1 year — expired tokens are pruned at read time.
 const TOKEN_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
 
+/**
+ * Error thrown for non-2xx API responses. The HTTP status is attached so
+ * callers can distinguish "token revoked/expired" (401) from "offline or
+ * server error" — only the former should sign the user out.
+ */
+export class ApiError extends Error {
+  statusCode: number;
+  constructor(message: string, statusCode: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.statusCode = statusCode;
+  }
+}
+
+/**
+ * Remote app configuration (Payload `app-config` global). Controls the
+ * in-app update modals and maintenance mode. Public endpoint — readable
+ * by guests. Returns null when unreachable; callers treat that as
+ * "no update enforcement".
+ */
+export interface RemoteAppConfig {
+  latestIosVersion?: string;
+  latestAndroidVersion?: string;
+  minIosVersion?: string;
+  minAndroidVersion?: string;
+  updateMessage?: string | null;
+  forceUpdateMessage?: string | null;
+  playStoreUrl?: string;
+  appStoreUrl?: string;
+  maintenanceMode?: boolean;
+  maintenanceMessage?: string | null;
+  /** Legacy single-platform fields — kept as fallback, prefer per-platform. */
+  latestAppVersion?: string;
+  minAppVersion?: string;
+}
+
 let memoryToken: string | null = null;
+
+/**
+ * Called whenever the backend rejects the stored token (HTTP 401), so UI
+ * state (AuthContext) can sign out immediately instead of lingering in a
+ * fake logged-in state with a dead token.
+ */
+let unauthorizedHandler: (() => void) | null = null;
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler;
+}
 
 export async function getAuthToken(): Promise<string | null> {
   if (memoryToken) return memoryToken;
   try {
     const issuedAtRaw = await SecureStore.getItemAsync(TOKEN_ISSUED_AT_KEY);
+    // Prune tokens older than TOKEN_MAX_AGE_MS so a stale install never
+    // reuses a long-dead session token.
     if (issuedAtRaw && Date.now() - Number(issuedAtRaw) > TOKEN_MAX_AGE_MS) {
-      // Token is older than 30 days — prune it safely.
       await SecureStore.deleteItemAsync(TOKEN_KEY);
       await SecureStore.deleteItemAsync(TOKEN_ISSUED_AT_KEY);
       await SecureStore.deleteItemAsync(CACHED_USER_KEY);
@@ -95,14 +142,18 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   if (!res.ok) {
     if (res.status === 401 && token) {
-      // Session revoked server-side — clear it safely. Offline failures never
+      // Session revoked or expired server-side — the stored token is dead.
+      // Clear it safely and tell the UI to sign out. Offline failures never
       // reach this branch, so we never wipe the session on network errors.
       await setAuthToken(null);
+      try {
+        unauthorizedHandler?.();
+      } catch {}
     }
     const errorData = await res.json().catch(() => ({}));
     const message =
       errorData?.errors?.[0]?.message || errorData?.error || errorData?.message || `Request failed with status ${res.status}`;
-    throw new Error(message);
+    throw new ApiError(message, res.status);
   }
 
   return (await res.json()) as T;
@@ -205,7 +256,11 @@ export const api = {
         await setCachedUser(data.user);
       }
       return data?.user || null;
-    } catch {
+    } catch (err) {
+      // A 401 means the token is revoked/expired server-side — rethrow so
+      // the session layer can sign out. Anything else (offline, 5xx) keeps
+      // the cached session: return null without disturbing it.
+      if (err instanceof ApiError && err.statusCode === 401) throw err;
       return null;
     }
   },
@@ -507,6 +562,17 @@ export const api = {
       return txList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     } catch {
       return [];
+    }
+  },
+
+  async getAppConfig(): Promise<RemoteAppConfig | null> {
+    try {
+      const data = await request<RemoteAppConfig>('/api/globals/app-config');
+      return data ?? null;
+    } catch {
+      // Backend unreachable or global not configured yet — skip all
+      // update enforcement rather than blocking the app.
+      return null;
     }
   },
 

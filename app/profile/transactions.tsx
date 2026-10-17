@@ -11,10 +11,12 @@ import { useRouter } from 'expo-router';
 import { Trophy } from 'lucide-react-native';
 import { SportIcon, StatusBadge } from '../../src/components/common/Badge';
 import { Chip } from '../../src/components/common/Chip';
+import { AuthGate } from '../../src/components/common/AuthGate';
 import { EmptyState } from '../../src/components/common/EmptyState';
 import { Header } from '../../src/components/common/Header';
 import { ScreenWash } from '../../src/components/common/ScreenWash';
 import { Skeleton } from '../../src/components/common/Skeleton';
+import { useAuth } from '../../src/context/AuthContext';
 import { useTransactions } from '../../src/hooks/useTransactions';
 import { BorderRadius, Colors, Fonts, Spacing, Typography } from '../../src/theme';
 import { formatDateShort } from '../../src/utils/calendar';
@@ -50,9 +52,23 @@ function TransactionSkeleton() {
 
 export default function TransactionsScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState('All');
 
   const { data: transactions = [], isLoading, refetch, isRefetching } = useTransactions();
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Header title="Transactions & Receipts" showBack />
+        <AuthGate
+          title="Sign in to view your receipts"
+          description="Payment history for your bookings and tournament entries will appear here once you sign in."
+          actionLabel="your receipts"
+        />
+      </View>
+    );
+  }
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {

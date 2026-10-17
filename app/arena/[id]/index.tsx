@@ -28,9 +28,11 @@ import { PriceBar } from '../../../src/components/arena/PriceBar';
 import { SlotGrid } from '../../../src/components/arena/SlotGrid';
 import { Header } from '../../../src/components/common/Header';
 import { SlotGridSkeleton } from '../../../src/components/common/Skeleton';
+import { useAuth } from '../../../src/context/AuthContext';
 import { useLocation } from '../../../src/context/LocationContext';
 import { useArena, useAvailability } from '../../../src/hooks/useArenas';
 import { ScreenWash } from '../../../src/components/common/ScreenWash';
+import { promptSignIn } from '../../../src/utils/requireAuth';
 import { BorderRadius, Colors, Fonts, Spacing, Typography } from '../../../src/theme';
 import { formatOperatingHours, openMapsDirections } from '../../../src/utils/calendar';
 import { resolveMediaUrl } from '../../../src/utils/media';
@@ -39,6 +41,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function ArenaDetailScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const arenaId = Number(id) || 1;
 
@@ -188,6 +191,7 @@ export default function ArenaDetailScreen() {
       Alert.alert('Select Slots', 'Please select at least 1 hour slot to continue.');
       return;
     }
+    if (!promptSignIn(router, 'book a court', !!user)) return;
 
     router.push({
       pathname: `/arena/${arenaId}/checkout`,

@@ -1,19 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { Booking } from '../types';
 
 export function useMyBookings() {
+  const { isAuthenticated, isLoading } = useAuth();
   return useQuery({
     queryKey: ['bookings', 'me'],
     queryFn: () => api.getMyBookings(),
+    // Never fire account endpoints as a guest (or before session restore
+    // finishes) — avoids pointless 401s and stale cross-account data.
+    enabled: isAuthenticated && !isLoading,
     staleTime: 1000 * 60,
   });
 }
 
 export function useMyRegistrations() {
+  const { isAuthenticated, isLoading } = useAuth();
   return useQuery({
     queryKey: ['registrations', 'me'],
     queryFn: () => api.getMyRegistrations(),
+    enabled: isAuthenticated && !isLoading,
     staleTime: 1000 * 60,
   });
 }
