@@ -226,7 +226,11 @@ export default function MyMatchesScreen() {
                     <View style={styles.trophyPill}>
                       <Trophy size={13} color={Colors.gold} />
                       <Text style={styles.trophyText}>
-                        {partner ? 'REGISTERED TEAM' : 'REGISTERED PLAYER'}
+                        {item.mode === 'offline'
+                          ? 'OFFLINE ENTRY'
+                          : partner
+                            ? 'REGISTERED TEAM'
+                            : 'REGISTERED PLAYER'}
                       </Text>
                     </View>
                     <Text style={styles.paidText}>

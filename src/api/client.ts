@@ -387,6 +387,31 @@ export const api = {
     return await request<Match>(`/api/matches/${id}?depth=2`);
   },
 
+  async getGroupStandings(eventId: number): Promise<{
+    eventId: number;
+    pairingType: string | null;
+    pointsPerWin: number;
+    qualifiersPerGroup: number;
+    allGroupMatchesDone: boolean;
+    groups: {
+      groupName: string;
+      qualifiers: number[];
+      standings: {
+        playerId: number;
+        playerName: string;
+        played: number;
+        wins: number;
+        losses: number;
+        setsWon: number;
+        setsLost: number;
+        setDiff: number;
+        points: number;
+      }[];
+    }[];
+  }> {
+    return await request<any>(`/api/events/${eventId}/group-standings`);
+  },
+
   async getMyMatches(userId: number): Promise<Match[]> {
     const query = [
       `where[or][0][player1][equals]=${userId}`,

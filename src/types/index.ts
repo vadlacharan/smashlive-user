@@ -83,6 +83,14 @@ export interface Event {
   areMatchesGenerated: boolean;
   registeredCount?: number;
   maxTeams?: number;
+  'Pairing Type'?: string | null;
+  numberOfGroups?: number | null;
+  qualifiersPerGroup?: number | null;
+  pointsPerWin?: number | null;
+  groupStageSets?: number | null;
+  groupStageMaxScore?: number | null;
+  knockoutStageSets?: number | null;
+  knockoutStageMaxScore?: number | null;
 }
 
 export interface Registration {
@@ -91,6 +99,8 @@ export interface Registration {
   player: User | number;
   partner?: User | number | null;
   playerEmail?: string;
+  mode?: 'online' | 'offline';
+  offlinePaymentReference?: string | null;
   isPaid: boolean;
   paymentGateway?: 'razorpay' | 'stripe';
   paymentStatus?: 'pending' | 'created' | 'authorized' | 'captured' | 'failed' | 'refunded';
@@ -111,6 +121,10 @@ export interface Match {
   player2?: User | number;
   player1Partner?: User | number | null;
   player2Partner?: User | number | null;
+  phase?: 'main' | 'group' | 'knockout';
+  groupName?: string | null;
+  player1Placeholder?: string | null;
+  player2Placeholder?: string | null;
   umpire?: User | number | null;
   winner?: User | number | null;
   player1SetsWon: number;

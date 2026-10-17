@@ -41,7 +41,7 @@ export default function EventRegisterScreen() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const openStripeCheckout = useStripeCheckout();
-  const { id, eventTitle, eventType, cost: costRaw, currency: currencyRaw, tournamentTitle, tournamentId, eventDescription } =
+  const { id, eventTitle, eventType, cost: costRaw, currency: currencyRaw, tournamentTitle, tournamentId, eventDescription, pairingType } =
     useLocalSearchParams<{
       id: string;
       eventTitle: string;
@@ -52,6 +52,7 @@ export default function EventRegisterScreen() {
       tournamentId?: string;
       normalCost?: string;
       eventDescription?: string;
+      pairingType?: string;
     }>();
 
   const eventId = Number(id) || 101;
@@ -233,6 +234,7 @@ export default function EventRegisterScreen() {
           <Text style={styles.eventTitle}>{eventTitle || "Tournament Event"}</Text>
           <Text style={styles.eventTypeTag}>
             {isDoubles ? 'Doubles Event • 2 Players per Team' : 'Singles Event'}
+            {pairingType === 'groups-knockout' ? ' • Groups → Knockout' : ''}
           </Text>
 
           {!!eventDescription && (

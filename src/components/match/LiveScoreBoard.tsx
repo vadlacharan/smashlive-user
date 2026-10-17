@@ -11,8 +11,14 @@ interface LiveScoreBoardProps {
 }
 
 export const LiveScoreBoard: React.FC<LiveScoreBoardProps> = ({ match, sets = [] }) => {
-  const p1Name = typeof match.player1 === 'object' && match.player1 ? match.player1.fullname : 'TBD';
-  const p2Name = typeof match.player2 === 'object' && match.player2 ? match.player2.fullname : 'TBD';
+  const p1Name =
+    typeof match.player1 === 'object' && match.player1
+      ? match.player1.fullname
+      : match.player1Placeholder || 'TBD';
+  const p2Name =
+    typeof match.player2 === 'object' && match.player2
+      ? match.player2.fullname
+      : match.player2Placeholder || 'TBD';
   const p1Partner = typeof match.player1Partner === 'object' && match.player1Partner ? match.player1Partner.fullname : '';
   const p2Partner = typeof match.player2Partner === 'object' && match.player2Partner ? match.player2Partner.fullname : '';
 
@@ -46,7 +52,13 @@ export const LiveScoreBoard: React.FC<LiveScoreBoardProps> = ({ match, sets = []
       <View style={styles.scoreboard}>
         {/* Top row — court + status, quiet */}
         <View style={styles.topRow}>
-          <Text style={styles.courtText}>{match.court || 'Court 1'}</Text>
+          <Text style={styles.courtText} numberOfLines={1}>
+            {match.groupName
+              ? `${match.groupName} · ${match.court || 'Court 1'}`
+              : match.phase === 'knockout'
+                ? `Knockout · ${match.court || 'Court 1'}`
+                : match.court || 'Court 1'}
+          </Text>
           <View style={styles.statusRow}>
             {match.inProgress && <View style={styles.liveDot} />}
             <Text style={[styles.statusText, match.isCompleted && styles.statusTextFinal]}>

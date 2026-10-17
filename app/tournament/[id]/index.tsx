@@ -183,43 +183,10 @@ export default function TournamentDetailScreen() {
           </View>
         </View>
 
-        {/* View Bracket / Draws Banner */}
-        <View style={styles.drawBannerContainer}>
-          <TouchableOpacity
-            onPress={() => router.push(`/tournament/${tournamentId}/draw`)}
-            style={styles.drawBanner}
-            activeOpacity={0.88}
-          >
-            {/* Championship gold gradient — distinct from green event cards */}
-            <LinearGradient
-              colors={['#332B15', '#211B11', '#161310']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.drawRing} />
-            <View style={styles.drawRingSmall} />
-
-            <View style={styles.drawBannerLeft}>
-              <View style={styles.trophyCircle}>
-                <Trophy size={20} color={Colors.textInverse} />
-              </View>
-              <View style={styles.drawBannerTextCol}>
-                <Text style={styles.drawBannerTitle}>Draws & Scores</Text>
-                <Text style={styles.drawBannerSubtitle}>
-                  Bracket, standings, and live results in one place
-                </Text>
-              </View>
-            </View>
-            <View style={styles.drawChevronPill}>
-              <ChevronRight size={18} color={Colors.gold} strokeWidth={2.5} />
-            </View>
-          </TouchableOpacity>
-        </View>
-
         {/* Events Categories List */}
         <View style={styles.eventsSection}>
-          {typeof tournament.additionalEventDiscountPrice === 'number' && (
+          {typeof tournament.additionalEventDiscountPrice === 'number' &&
+            tournament.additionalEventDiscountPrice > 0 && (
             <View style={styles.tournamentDiscountBanner}>
               <Zap size={15} color={Colors.gold} />
               <Text style={styles.tournamentDiscountText}>
@@ -274,10 +241,26 @@ export default function TournamentDetailScreen() {
 
                   <View style={styles.eventTop}>
                     <View style={styles.eventTypeBadge}>
-                      <Text style={styles.eventTypeText}>
-                        {event.eventType.toUpperCase()} • BEST OF {event.numberOfSets}
+                      <Text style={styles.eventTypeText} numberOfLines={1}>
+                        {event.eventType.toUpperCase()} •{' '}
+                        {event['Pairing Type'] === 'groups-knockout'
+                          ? 'GROUPS + KNOCKOUT'
+                          : `BEST OF ${event.numberOfSets}`}
                       </Text>
                     </View>
+
+                    {event.areMatchesGenerated && (
+                      <TouchableOpacity
+                        onPress={() =>
+                          router.push(`/tournament/${tournamentId}/draw?eventId=${event.id}`)
+                        }
+                        style={styles.eventDrawPill}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.eventDrawPillText}>Draws</Text>
+                        <ChevronRight size={12} color={Colors.green} strokeWidth={2.6} />
+                      </TouchableOpacity>
+                    )}
                   </View>
 
                   <Text style={styles.eventCaption}>{event.title}</Text>
@@ -315,7 +298,11 @@ export default function TournamentDetailScreen() {
                       <View style={styles.eventMeta}>
                         <Calendar size={12} color="rgba(255, 255, 255, 0.5)" />
                         <Text style={styles.eventDates}>
-                          {formatDateShort(event.startdate)} – {formatDateShort(event.enddate)}
+                          {event.startdate
+                            ? `${formatDateShort(event.startdate)} – ${formatDateShort(
+                                event.enddate
+                              )}`
+                            : 'Dates to be announced'}
                         </Text>
                       </View>
                       <Text style={styles.eventSpotsText}>
@@ -336,7 +323,9 @@ export default function TournamentDetailScreen() {
                     {tournament.isLive ? (
                       <Button
                         title="View Draw"
-                        onPress={() => router.push(`/tournament/${tournamentId}/draw`)}
+                        onPress={() =>
+                          router.push(`/tournament/${tournamentId}/draw?eventId=${event.id}`)
+                        }
                         size="sm"
                         style={styles.eventButton}
                       />
@@ -363,6 +352,7 @@ export default function TournamentDetailScreen() {
                               tournamentTitle: tournament.title,
                               tournamentId: String(tournamentId),
                               eventDescription: event.description || '',
+                              pairingType: event['Pairing Type'] || '',
                             },
                           })
                         }
@@ -513,79 +503,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.micro,
     fontFamily: Fonts.bodyBold,
   },
-  drawBannerContainer: {
-    paddingHorizontal: Spacing.screenPadding,
-    marginVertical: Spacing.md,
-  },
-  drawBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: BorderRadius.card,
-    padding: Spacing.md,
-    overflow: 'hidden',
-    backgroundColor: '#141B17',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  drawRing: {
-    position: 'absolute',
-    top: -65,
-    right: -55,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    borderWidth: 18,
-    borderColor: 'rgba(255, 216, 115, 0.06)',
-  },
-  drawRingSmall: {
-    position: 'absolute',
-    top: -45,
-    right: -35,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 216, 115, 0.1)',
-  },
-  drawBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    flex: 1,
-  },
-  drawBannerTextCol: {
-    flex: 1,
-  },
-  trophyCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: Colors.gold,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  drawBannerTitle: {
-    color: '#FFFFFF',
-    fontSize: Typography.body,
-    fontFamily: Fonts.bodyBold,
-  },
-  drawBannerSubtitle: {
-    color: 'rgba(245, 247, 246, 0.65)',
-    fontSize: Typography.micro,
-    marginTop: 2,
-  },
-  drawChevronPill: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(255, 216, 115, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   eventsSection: {
     paddingHorizontal: Spacing.screenPadding,
     marginTop: Spacing.sm,
@@ -659,12 +576,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: BorderRadius.full,
+    flexShrink: 1,
+    marginRight: Spacing.sm,
   },
   eventTypeText: {
     color: Colors.green,
     fontSize: Typography.micro,
     fontFamily: Fonts.bodyBold,
     letterSpacing: 0.6,
+  },
+  eventDrawPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: 'rgba(57, 255, 136, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(57, 255, 136, 0.35)',
+    paddingLeft: 10,
+    paddingRight: 6,
+    paddingVertical: 5,
+    borderRadius: BorderRadius.full,
+  },
+  eventDrawPillText: {
+    color: Colors.green,
+    fontSize: Typography.micro,
+    fontFamily: Fonts.headingSemibold,
+    letterSpacing: 0.3,
   },
   eventCaption: {
     color: 'rgba(245, 247, 246, 0.7)',

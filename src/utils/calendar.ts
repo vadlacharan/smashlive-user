@@ -13,8 +13,10 @@ export function formatCurrency(amount: number, currency: 'INR' | 'USD' = 'INR'):
 /**
  * Formats a date string into "Mon, 25 Aug"
  */
-export function formatDateShort(dateStr: string | Date): string {
+export function formatDateShort(dateStr?: string | Date | null): string {
+  if (!dateStr) return '';
   const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+  if (!d || isNaN(d.getTime())) return '';
   return d.toLocaleDateString('en-US', {
     weekday: 'short',
     day: 'numeric',
@@ -25,8 +27,10 @@ export function formatDateShort(dateStr: string | Date): string {
 /**
  * Formats date into "25 Aug 2026"
  */
-export function formatDateFull(dateStr: string | Date): string {
+export function formatDateFull(dateStr?: string | Date | null): string {
+  if (!dateStr) return '';
   const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+  if (!d || isNaN(d.getTime())) return '';
   return d.toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'short',

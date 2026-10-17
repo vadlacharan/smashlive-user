@@ -5,6 +5,7 @@ import { Match } from '../../types';
 
 interface StandingsTableProps {
   matches: Match[];
+  pointsPerWin?: number;
 }
 
 interface TeamStanding {
@@ -19,7 +20,7 @@ interface TeamStanding {
   setDiff: number;
 }
 
-export const StandingsTable: React.FC<StandingsTableProps> = ({ matches }) => {
+export const StandingsTable: React.FC<StandingsTableProps> = ({ matches, pointsPerWin = 3 }) => {
   const standings = React.useMemo(() => {
     const map = new Map<number, TeamStanding>();
 
@@ -74,11 +75,11 @@ export const StandingsTable: React.FC<StandingsTableProps> = ({ matches }) => {
 
         if (winnerId === p1Id) {
           p1.wins += 1;
-          p1.points += 3;
+          p1.points += pointsPerWin;
           p2.losses += 1;
         } else {
           p2.wins += 1;
-          p2.points += 3;
+          p2.points += pointsPerWin;
           p1.losses += 1;
         }
 

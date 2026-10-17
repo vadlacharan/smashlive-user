@@ -68,14 +68,26 @@ export default function MatchScreen() {
   const eventTitle =
     typeof match.event === 'object' && match.event ? match.event.title : 'Tournament Match';
 
-  const p1Name = typeof match.player1 === 'object' && match.player1 ? match.player1.fullname : 'TBD';
-  const p2Name = typeof match.player2 === 'object' && match.player2 ? match.player2.fullname : 'TBD';
+  const phaseLabel = match.groupName
+    ? match.groupName
+    : match.phase === 'knockout'
+      ? `Knockout • Round ${match.round || 1}`
+      : `Round ${match.round || 1}`;
+
+  const p1Name =
+    typeof match.player1 === 'object' && match.player1
+      ? match.player1.fullname
+      : match.player1Placeholder || 'TBD';
+  const p2Name =
+    typeof match.player2 === 'object' && match.player2
+      ? match.player2.fullname
+      : match.player2Placeholder || 'TBD';
 
   return (
     <View style={styles.container}>
       <Header
         title={eventTitle}
-        subtitle={`Match #${match.match || 1} • Round ${match.round || 1}`}
+        subtitle={`Match #${match.match || 1} • ${phaseLabel}`}
         showBack
         rightAction={
           <RefreshButton
